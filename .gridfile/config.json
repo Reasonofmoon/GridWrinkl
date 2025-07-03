@@ -1,0 +1,34 @@
+{
+  "project_name": "내 프로젝트",
+  "version": "1.0.0",
+  "created_at": "2025-07-03T22:56:20.549771",
+  "grid_size": {
+    "width": 12,
+    "height": 8
+  },
+  "zones": {
+    "active": {
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": 4
+    },
+    "resources": {
+      "x": 6,
+      "y": 0,
+      "width": 6,
+      "height": 4
+    },
+    "archive": {
+      "x": 0,
+      "y": 4,
+      "width": 12,
+      "height": 4
+    }
+  },
+  "ai_tools": [
+    "cursor",
+    "copilot"
+  ],
+  "auto_organize": true
+}

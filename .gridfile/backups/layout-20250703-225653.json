@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-07-03T22:56:20.557792",
+  "grid_size": {
+    "width": 12,
+    "height": 8
+  },
+  "zones": {
+    "active": {
+      "x": 0,
+      "y": 0,
+      "width": 6,
+      "height": 4
+    },
+    "resources": {
+      "x": 6,
+      "y": 0,
+      "width": 6,
+      "height": 4
+    },
+    "archive": {
+      "x": 0,
+      "y": 4,
+      "width": 12,
+      "height": 4
+    }
+  },
+  "blocks": [
+    {
+      "path": ".cursorrules",
+      "name": ".cursorrules",
+      "type": "unknown",
+      "category": "active",
+      "size": 771,
+      "modified": "2025-07-03T22:56:20.552769",
+      "placed": false
+    },
+    {
+      "path": "gridwrinkl_cli.py",
+      "name": "gridwrinkl_cli.py",
+      "type": "code",
+      "category": "active",
+      "size": 46703,
+      "modified": "2025-07-03T22:53:00.565756",
+      "placed": false
+    }
+  ],
+  "stats": {
+    "total_files": 2,
+    "placed_files": 0,
+    "by_category": {
+      "active": 2
+    },
+    "by_type": {
+      "unknown": 1,
+      "code": 1
+    }
+  }
+}

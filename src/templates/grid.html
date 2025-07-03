@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>GridWrinkl - 개발 생산성의 혁명</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary-color: #f093fb;
+            --success-color: #4facfe;
+            --warning-color: #ffecd2;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .grid-board {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 10px;
+            height: 500px;
+            position: relative;
+        }
+
+        .grid-cell {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .grid-cell:hover {
+            background: #f8f9ff;
+            border-color: #667eea;
+        }
+
+        .file-block {
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            cursor: move;
+            user-select: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-block:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+
+        .block-active { background: linear-gradient(45deg, #ff6b6b, #ff8e8e); }
+        .block-pending { background: linear-gradient(45deg, #ffa726, #ffb74d); }
+        .block-archive { background: linear-gradient(45deg, #ffeb3b, #fff176); color: #333; }
+        .block-completed { background: linear-gradient(45deg, #4caf50, #66bb6a); }
+        .block-resources { background: linear-gradient(45deg, #2196f3, #42a5f5); }
+        .block-personal { background: linear-gradient(45deg, #9c27b0, #ab47bc); }
+
+        .file-tree ul {
+            list-style-type: none;
+            padding-left: 1.5em;
+        }
+
+        .file-tree li {
+            margin: 0.5em 0;
+            position: relative;
+        }
+
+        .file-tree li::before {
+            content: "📄";
+            margin-right: 0.5em;
+        }
+
+        .file-tree li.folder::before {
+            content: "📁";
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        pre {
+            background-color: #f5f5f5;
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin: 1em 0;
+            border: 1px solid #ddd;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        .terminal {
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            padding: 1em;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 1em 0;
+        }
+        
+        .terminal-line {
+            display: block;
+            line-height: 1.5;
+        }
+        
+        .terminal-prompt::before {
+            content: "$ ";
+            color: #4caf50;
+        }
+        
+        .terminal-output {
+            color: #bbb;
+        }
+        
+        .terminal-success {
+            color: #4caf50;
+        }
+
+        @media (max-width: 768px) {
+            .grid-board {
+                grid-template-columns: repeat(6, 1fr);
+                grid-template-rows: repeat(16, 1fr);
+                height: 600px;
+            }
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .zone-indicator {
+            position: absolute;
+            border: 2px dashed rgba(102, 126, 234, 0.5);
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(102, 126, 234, 0.7);
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+        
+        #guided-tour {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 30px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+        
+        #guided-tour:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tour-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .tour-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tour-step {
+            display: none;
+        }
+        
+        .tour-step.active {
+            display: block;
+        }
+        
+        .tour-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .tour-img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .context-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .context-card h4 {
+            margin-top: 0;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body class="bg-indigo-600">
+    <button id="guided-tour">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        가이드 투어
+    </button>
+
+    <div class="tour-modal" id="tour-modal">
+        <div class="tour-modal-content">
+            <div class="tour-step active" data-step="1">
+                <h2 class="text-2xl font-bold mb-4">GridWrinkl 시스템 소개</h2>
+                <p class="mb-4">GridWrinkl은 물리적 파일 정리 시스템(GridFile)과 AI 맥락 관리 시스템(Wrinkl)을 결합한 하이브리드 개발 생산성 도구입니다.</p>
+                <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-bold text-blue-600">핵심 개념:</h4>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>파일 구조(GridFile): 시각적 그리드 기반 파일 배치</li>
+                        <li>맥락 관리(Wrinkl): .ai/ 디렉토리를 통한 AI 맥락 체계화</li>
+                        <li>하이브리드 통합: 두 시스템을 자동으로 연동</li>
+                    </ul>
+                </div>
+                <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000" alt="개발 환경" class="tour-img">
+            </div>
+            
+            <div class="tour-step" data-step="2">
+                <h2 class="text-2xl font-bold mb-4">GridFile 시스템</h2>
+                <p class="mb-4">GridFile은 시각적 그리드 시스템으로 파일을 직관적으로 정리합니다. Gridfinity의 물리적 정리 철학에서 영감을 받았습니다.</p>
+                <img src="https://i.imgur.com/MEF3dXQ.png" alt="GridFile 시각화" class="tour-img">
+                <p class="mb-2 font-bold">주요 영역:</p>
+                <ul class="list-disc pl-5 mb-4">
+                    <li><span class="text-red-500 font-bold">활성 영역:</span> 현재 작업 중인 파일</li>
+                    <li><span class="text-blue-500 font-bold">리소스 영역:</span> 참조 자료 및 설정 파일</li>
+                    <li><span class="text-green-500 font-bold">아카이브 영역:</span> 완료된 작업들</li>
+                </ul>
+            </div>
+            
+            <div class="tour-step" data-step="3">
+                <h2 class="text-2xl font-bold mb-4">Wrinkl 맥락 관리</h2>
+                <p class="mb-4">Wrinkl은 .ai/ 디렉토리를 통해 프로젝트의 맥락을 체계적으로 관리합니다.</p>
+                <div class="context-card">
+                    <h4>주요 맥락 파일들</h4>
+                    <ul class="mt-2 space-y-1">
+                        <li>📄 <code>.ai/project.md</code> - 프로젝트 개요</li>
+                        <li>📄 <code>.ai/patterns.md</code> - 코딩 패턴 가이드</li>
+                        <li>📄 <code>.ai/architecture.md</code> - 시스템 설계</li>
+                        <li>📁 <code>.ai/ledgers/</code> - 기능별 원장 파일</li>
+                    </ul>
+                </div>
+                <img src="https://i.imgur.com/BxADF8P.png" alt="Wrinkl 디렉토리 구조" class="tour-img">
+            </div>
+            
+            <div class="tour-step" data-step="4">
+                <h2 class="text-2xl font-bold mb-4">시스템 통합</h2>
+                <p class="mb-4">두 시스템이 완벽하게 연동되어 파일 정리와 맥락 관리가 자동화됩니다.</p>
+                <div class="bg-yellow-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-bold text-yellow-700">작동 방식:</h4>
+                    <ol class="list-decimal pl-5 mt-2">
+                        <li>새 기능 시작 → 원장(ledger) 생성</li>
+                        <li>파일 생성 → GridFile 블록 자동 할당</li>
+                        <li>GridFile 블록 이동 → Wrinkl 맥락 업데이트</li>
+                        <li>AI 도구 사용 → 자동 맥락 인식</li>
+                    </ol>
+                </div>
+                <img src="https://i.imgur.com/7c3rpfL.png" alt="통합 시스템 구조" class="tour-img">
+            </div>
+            
+            <div class="tour-step" data-step="5">
+                <h2 class="text-2xl font-bold mb-4">시작하기</h2>
+                <p class="mb-4">아래 단계를 따라 GridWrinkl 시스템을 설치하고 사용해보세요:</p>
+                <div class="terminal">
+                    <span class="terminal-line terminal-prompt">npm install -g gridwrinkl</span>
+                    <span class="terminal-line terminal-output">Installing GridWrinkl v1.0.0...</span>
+                    <span class="terminal-line terminal-success">GridWrinkl installed successfully!</span>
+                    <span class="terminal-line">&nbsp;</span>
+                    <span class="terminal-line terminal-prompt">cd my-project</span>
+                    <span class="terminal-line terminal-prompt">gridwrinkl init</span>
+                    <span class="terminal-line terminal-success">GridWrinkl 시스템이 초기화되었습니다!</span>
+                </div>
+                <p class="my-4">아래 인터페이스에서 시스템을 체험해보세요!</p>
+            </div>
+            
+            <div class="tour-nav">
+                <button class="btn btn-secondary" id="tour-prev" style="display: none;">이전</button>
+                <button class="btn btn-primary" id="tour-next">다음</button>
+                <button class="btn btn-warning" id="tour-close" style="display: none;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="card p-8 mb-8 text-center">
+            <h1 class="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+                🌟 GridWrinkl 프로토타입
+            </h1>
+            <p class="text-xl text-gray-600 mb-6">개발 생산성의 완전한 혁명</p>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <button class="btn btn-primary" onclick="showTab('demo')">💻 데모 보기</button>
+                <button class="btn btn-secondary" onclick="showTab('installation')">🚀 설치 방법</button>
+                <button class="btn btn-success" onclick="showTab('architecture')">📐 시스템 구조</button>
+                <button class="btn btn-warning" onclick="showTab('examples')">🔍 사용 예제</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="demo">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-8">
+                    <div class="card p-6 mb-8">
+                        <h2 class="text-2xl font-bold mb-4">📊 GridFile 시각화</h2>
+                        <div class="relative">
+                            <div class="grid-board" id="grid-board">
+                                <!-- 그리드 셀들이 JavaScript로 생성됩니다 -->
+                            </div>
+                            
+                            <!-- 영역 표시 -->
+                            <div class="zone-indicator active-zone" style="left: 10px; top: 10px; width: calc(50% - 10px); height: calc(50% - 10px);">
+                                활성 영역
+                            </div>
+                            <div class="zone-indicator resources-zone" style="left: calc(50% + 5px); top: 10px; width: calc(50% - 15px); height: calc(50% - 10px);">
+                                리소스 영역
+                            </div>
+                            <div class="zone-indicator archive-zone" style="left: 10px; top: calc(50% + 5px); width: calc(100% - 20px); height: calc(50% - 15px);">
+                                아카이브 영역
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <h2 class="text-2xl font-bold mb-4">🧠 기능 대시보드</h2>
+                        <div class="context-card">
+                            <h3 class="text-lg font-bold">활성 기능 목록</h3>
+                            <p class="text-sm text-gray-500">마지막 업데이트: 2023-07-03 12:45</p>
+                            <ul class="mt-4 space-y-2">
+                                <li class="flex items-center">
+                                    <span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+                                    <span class="font-medium">user_authentication</span>
+                                    <span class="ml-2 text-sm text-gray-500">진행 중</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
+                                    <span class="font-medium">product_catalog</span>
+                                    <span class="ml-2 text-sm text-gray-500">계획됨</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+                                    <span class="font-medium">payment_processing</span>
+                                    <span class="ml-2 text-sm text-gray-500">완료됨</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h3 class="text-lg font-bold mb-2">개발 진행 통계</h3>
+                            <div style="height: 200px">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-4">
+                    <div class="card p-6 mb-8">
+                        <h2 class="text-2xl font-bold mb-4">📁 Wrinkl 맥락 구조</h2>
+                        <div class="file-tree">
+                            <ul>
+                                <li class="folder">.ai
+                                    <ul>
+                                        <li>project.md</li>
+                                        <li>patterns.md</li>
+                                        <li>architecture.md</li>
+                                        <li>context-rules.md</li>
+                                        <li class="folder">ledgers
+                                            <ul>
+                                                <li>_active.md</li>
+                                                <li class="folder">active
+                                                    <ul>
+                                                        <li>user_authentication.md</li>
+                                                        <li>product_catalog.md</li>
+                                                    </ul>
+                                                </li>
+                                                <li class="folder">archived
+                                                    <ul>
+                                                        <li>payment_processing.md</li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                        <li class="folder">resources</li>
+                                        <li class="folder">templates</li>
+                                        <li class="folder">context-snapshots</li>
+                                    </ul>
+                                </li>
+                                <li class="folder">.gridfile
+                                    <ul>
+                                        <li>config.json</li>
+                                        <li class="folder">layouts</li>
+                                        <li class="folder">templates</li>
+                                        <li class="folder">backups</li>
+                                    </ul>
+                                </li>
+                                <li class="folder">src
+                                    <ul>
+                                        <li>app.js</li>
+                                        <li>index.html</li>
+                                        <li class="folder">components</li>
+                                        <li class="folder">utils</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <h2 class="text-2xl font-bold mb-4">🎮 작업 제어판</h2>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">새 기능 생성</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="feature-name" placeholder="feature_name" class="flex-1 p-2 border rounded">
+                                <button class="btn btn-primary" onclick="createFeature()">생성</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">파일 추가</label>
+                            <div class="flex gap-2">
+                                <select id="file-type" class="p-2 border rounded">
+                                    <option value="code">코드 파일</option>
+                                    <option value="document">문서</option>
+                                    <option value="config">설정</option>
+                                </select>
+                                <button class="btn btn-secondary" onclick="addFile()">추가</button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">시스템 관리</label>
+                            <div class="flex gap-2">
+                                <button class="btn btn-success flex-1" onclick="syncSystem()">맥락 동기화</button>
+                                <button class="btn btn-warning flex-1" onclick="exportLayout()">내보내기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="installation">
+            <div class="card p-8">
+                <h2 class="text-3xl font-bold mb-6">🚀 GridWrinkl 설치 가이드</h2>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">1. 필요 조건</h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Node.js v14 이상</li>
+                        <li>Python 3.8 이상</li>
+                        <li>Git</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">2. 패키지 설치</h3>
+                    <div class="terminal">
+                        <span class="terminal-line terminal-prompt">npm install -g gridwrinkl</span>
+                    </div>
+                    
+                    <p class="mt-4 mb-2">또는 Python 패키지로 설치:</p>
+                    <div class="terminal">
+                        <span class="terminal-line terminal-prompt">pip install gridwrinkl</span>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">3. 프로젝트 초기화</h3>
+                    <div class="terminal">
+                        <span class="terminal-line terminal-prompt">cd my-project</span>
+                        <span class="terminal-line terminal-prompt">gridwrinkl init</span>
+                    </div>
+                    
+                    <p class="mt-4">이 명령은 다음을 수행합니다:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-2">
+                        <li>GridFile 설정 디렉토리 (.gridfile/) 생성</li>
+                        <li>Wrinkl 맥락 디렉토리 (.ai/) 생성</li>
+                        <li>AI 도구 설정 파일 (.cursorrules, copilot-instructions.md 등) 생성</li>
+                        <li>기존 파일들을 자동 분석하여 최적 배치</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">4. AI 도구 설정</h3>
+                    <p class="mb-4">GridWrinkl과 AI 도구들을 연동하려면:</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                            <h4 class="font-bold mb-2">GitHub Copilot</h4>
+                            <p class="text-sm mb-4">VS Code에서 Copilot 사용 시 자동으로 맥락 인식</p>
+                            <code>공식 확장 프로그램 사용</code>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                            <h4 class="font-bold mb-2">Cursor IDE</h4>
+                            <p class="text-sm mb-4">.cursorrules 파일을 통한 자동 맥락 인식</p>
+                            <code>Cursor 재시작 필요</code>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-2xl font-bold mb-4">5. 시각적 인터페이스 실행</h3>
+                    <div class="terminal">
+                        <span class="terminal-line terminal-prompt">gridwrinkl ui</span>
+                        <span class="terminal-line terminal-output">GridWrinkl UI 시작 중...</span>
+                        <span class="terminal-line terminal-success">http://localhost:3000에서 웹 인터페이스 접속 가능</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="architecture">
+            <div class="card p-8">
+                <h2 class="text-3xl font-bold mb-6">📐 시스템 아키텍처</h2>
+                
+                <div class="bg-blue-50 p-6 rounded-lg mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-blue-800">핵심 개념</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-4 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-blue-600 mb-2">GridFile</h4>
+                            <p>시각적 그리드 시스템으로 파일을 직관적으로 배치하고 관리합니다. 물리적 Gridfinity 시스템에서 영감을 얻은 디지털 정리 체계입니다.</p>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-purple-600 mb-2">Wrinkl</h4>
+                            <p>AI 맥락 관리 시스템으로 .ai/ 디렉토리에 체계적으로 프로젝트의 맥락을 저장하고 관리합니다. AI 도구가 이해할 수 있는 형태로 맥락을 구조화합니다.</p>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-indigo-600 mb-2">GridWrinkl</h4>
+                            <p>두 시스템을 통합하여 파일의 물리적 배치와 논리적 맥락을 함께 관리합니다. 개발자와 AI 모두에게 최적화된 개발 환경을 제공합니다.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">시스템 구성 요소</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">물리적 레이어</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><code>.gridfile/</code>: 그리드 설정 및 레이아웃</li>
+                                <li><code>.gridfile/config.json</code>: 그리드 설정</li>
+                                <li><code>.gridfile/layouts/</code>: 그리드 레이아웃 저장</li>
+                                <li><code>.gridfile/templates/</code>: 레이아웃 템플릿</li>
+                                <li><code>.gridfile/backups/</code>: 자동 백업</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold text-lg mb-2">논리적 레이어</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><code>.ai/</code>: AI 맥락 저장소</li>
+                                <li><code>.ai/project.md</code>: 프로젝트 개요</li>
+                                <li><code>.ai/patterns.md</code>: 코딩 패턴</li>
+                                <li><code>.ai/architecture.md</code>: 시스템 설계</li>
+                                <li><code>.ai/ledgers/</code>: 기능별 원장</li>
+                                <li><code>.ai/resources/</code>: 참조 자료</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">상호작용 다이어그램</h3>
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <svg width="100%" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 주요 시스템 -->
+                            <rect x="150" y="50" width="200" height="100" rx="10" fill="#f0f4ff" stroke="#667eea" stroke-width="2"/>
+                            <text x="250" y="100" font-size="16" font-weight="bold" text-anchor="middle">GridFile</text>
+                            <text x="250" y="125" font-size="12" text-anchor="middle">시각적 파일 관리</text>
+                            
+                            <rect x="450" y="50" width="200" height="100" rx="10" fill="#fdf0ff" stroke="#a855f7" stroke-width="2"/>
+                            <text x="550" y="100" font-size="16" font-weight="bold" text-anchor="middle">Wrinkl</text>
+                            <text x="550" y="125" font-size="12" text-anchor="middle">AI 맥락 관리</text>
+                            
+                            <rect x="300" y="200" width="200" height="100" rx="10" fill="#5a67d8" stroke="#4c51bf" stroke-width="2"/>
+                            <text x="400" y="250" font-size="16" font-weight="bold" text-anchor="middle" fill="white">GridWrinkl</text>
+                            <text x="400" y="275" font-size="12" text-anchor="middle" fill="white">통합 시스템</text>
+                            
+                            <!-- 외부 연동 -->
+                            <rect x="50" y="350" width="120" height="40" rx="5" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+                            <text x="110" y="375" font-size="14" text-anchor="middle">개발자</text>
+                            
+                            <rect x="250" y="350" width="120" height="40" rx="5" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+                            <text x="310" y="375" font-size="14" text-anchor="middle">IDE</text>
+                            
+                            <rect x="440" y="350" width="120" height="40" rx="5" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+                            <text x="500" y="375" font-size="14" text-anchor="middle">AI 도구</text>
+                            
+                            <rect x="630" y="350" width="120" height="40" rx="5" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+                            <text x="690" y="375" font-size="14" text-anchor="middle">Git</text>
+                            
+                            <!-- 연결선 -->
+                            <line x1="250" y1="150" x2="325" y2="200" stroke="#667eea" stroke-width="2" stroke-dasharray="5,5"/>
+                            <line x1="550" y1="150" x2="475" y2="200" stroke="#a855f7" stroke-width="2" stroke-dasharray="5,5"/>
+                            
+                            <line x1="110" y1="350" x2="325" y2="300" stroke="#48bb78" stroke-width="2"/>
+                            <line x1="310" y1="350" x2="360" y2="300" stroke="#48bb78" stroke-width="2"/>
+                            <line x1="500" y1="350" x2="440" y2="300" stroke="#48bb78" stroke-width="2"/>
+                            <line x1="690" y1="350" x2="475" y2="300" stroke="#48bb78" stroke-width="2"/>
+                            
+                            <!-- 화살표 -->
+                            <polygon points="325,195 320,185 330,185" fill="#667eea"/>
+                            <polygon points="475,195 470,185 480,185" fill="#a855f7"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-2xl font-bold mb-4">데이터 흐름</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <ol class="list-decimal pl-5 space-y-4">
+                            <li>
+                                <strong>기능 개발 시작</strong>
+                                <div class="text-sm text-gray-600 mt-1">개발자가 새 기능을 시작하면 Wrinkl이 자동으로 ledger 파일 생성</div>
+                            </li>
+                            <li>
+                                <strong>파일 생성/수정</strong>
+                                <div class="text-sm text-gray-600 mt-1">IDE에서 파일이 생성/수정되면 GridFile이 최적 위치에 블록 할당</div>
+                            </li>
+                            <li>
+                                <strong>맥락 동기화</strong>
+                                <div class="text-sm text-gray-600 mt-1">GridWrinkl이 파일 위치와 맥락 정보를 자동으로 동기화</div>
+                            </li>
+                            <li>
+                                <strong>AI 도구 활용</strong>
+                                <div class="text-sm text-gray-600 mt-1">AI 도구가 .ai/ 디렉토리의 맥락 정보를 자동으로 이해</div>
+                            </li>
+                            <li>
+                                <strong>기능 완료</strong>
+                                <div class="text-sm text-gray-600 mt-1">완료된 기능은 아카이브 존으로 이동하고 ledger도 아카이브됨</div>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="examples">
+            <div class="card p-8">
+                <h2 class="text-3xl font-bold mb-6">🔍 사용 예제</h2>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">1. 기본 명령어</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold mb-2">프로젝트 초기화</h4>
+                            <div class="terminal">
+                                <span class="terminal-line terminal-prompt">gridwrinkl init</span>
+                                <span class="terminal-line terminal-output">
+                                  🚀 GridFile-Wrinkl 하이브리드 시스템 초기화 중...
+                                </span>
+                                <span class="terminal-line terminal-output">
+                                  📊 프로젝트 파일 분석 중...
+                                </span>
+                                <span class="terminal-line terminal-success">
+                                  ✅ 하이브리드 시스템 초기화 완료!
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold mb-2">새 기능 생성</h4>
+                            <div class="terminal">
+                                <span class="terminal-line terminal-prompt">gridwrinkl feature user-login</span>
+                                <span class="terminal-line terminal-output">
+                                  📝 기능 ledger 생성 중...
+                                </span>
+                                <span class="terminal-line terminal-success">
+                                  ✅ 기능 'user-login'의 개발을 시작합니다
+                                </span>
+                                <span class="terminal-line terminal-output">
+                                  📄 Ledger 위치: .ai/ledgers/active/user-login.md
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">2. 실제 사용 시나리오</h3>
+                    
+                    <div class="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                        <h4 class="font-bold text-xl mb-2">사용자 인증 기능 개발</h4>
+                        
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-blue-600">1. 기능 시작</h5>
+                            <div class="terminal">
+                                <span class="terminal-line terminal-prompt">gridwrinkl feature user-authentication</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-blue-600">2. 생성된 ledger 편집</h5>
+                            <pre><code># user-authentication - 기능 개발 원장
+
+## 기본 정보
+- **기능명**: user-authentication
+- **생성일**: 2023-07-03 12:45:30
+- **상태**: 개발 중
+- **담당자**: 홍길동
+
+## 요구사항
+- 이메일/패스워드 로그인
+- OAuth 소셜 로그인(구글, 페이스북)
+- JWT 토큰 기반 인증
+- 비밀번호 재설정</code></pre>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="font-semibold text-blue-600">3. AI 도구 활용</h5>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="font-medium mb-2">AI 프롬프트:</p>
+                                <p class="text-gray-700">user-authentication 기능을 개발 중입니다. .ai/ledgers/active/user-authentication.md를 참고해서 FastAPI 기반 JWT 인증 시스템을 구현해주세요.</p>
+                                
+                                <p class="font-medium mt-4 mb-2">AI 응답 (부분):</p>
+                                <p class="text-gray-700">ledger에 명시된 요구사항에 맞춰 JWT 인증 시스템을 구현하겠습니다. OAuth 통합과 비밀번호 재설정 기능을 포함한 코드를 작성할게요...</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h5 class="font-semibold text-blue-600">4. 기능 완료 및 아카이브</h5>
+                            <div class="terminal">
+                                <span class="terminal-line terminal-prompt">gridwrinkl archive user-authentication</span>
+                                <span class="terminal-line terminal-output">
+                                  📦 기능 아카이브 중...
+                                </span>
+                                <span class="terminal-line terminal-success">
+                                  ✅ 'user-authentication' 기능이 아카이브되었습니다
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-2xl font-bold mb-4">3. 주요 기능별 사용법</h3>
+                    
+                    <div class="accordion">
+                        <div class="accordion-item p-4 bg-gray-50 rounded-lg mb-2 cursor-pointer">
+                            <h4 class="font-bold">기능 관리</h4>
+                            <div class="accordion-content hidden mt-2">
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl feature list</span>
+                                    <span class="terminal-line terminal-output">📋 현재 활성 기능:</span>
+                                    <span class="terminal-line terminal-output">- user-login (활성)</span>
+                                    <span class="terminal-line terminal-output">- product-catalog (활성)</span>
+                                    <span class="terminal-line terminal-output">- payment-processing (아카이브)</span>
+                                </div>
+                                
+                                <p class="mt-4 mb-2">기능 복원하기:</p>
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl feature restore payment-processing</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item p-4 bg-gray-50 rounded-lg mb-2 cursor-pointer">
+                            <h4 class="font-bold">맥락 관리</h4>
+                            <div class="accordion-content hidden mt-2">
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl context snapshot create "중요 업데이트 전"</span>
+                                    <span class="terminal-line terminal-success">✅ 맥락 스냅샷이 생성되었습니다</span>
+                                </div>
+                                
+                                <p class="mt-4 mb-2">맥락 최적화:</p>
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl context optimize</span>
+                                    <span class="terminal-line terminal-output">🧠 맥락 최적화 중...</span>
+                                    <span class="terminal-line terminal-success">✅ 맥락이 최적화되었습니다. 불필요한 정보 정리됨</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item p-4 bg-gray-50 rounded-lg mb-2 cursor-pointer">
+                            <h4 class="font-bold">그리드 관리</h4>
+                            <div class="accordion-content hidden mt-2">
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl grid reorganize</span>
+                                    <span class="terminal-line terminal-output">🎯 그리드 재구성 중...</span>
+                                    <span class="terminal-line terminal-success">✅ 그리드가 최적화되었습니다. 효율성 35% → 78%</span>
+                                </div>
+                                
+                                <p class="mt-4 mb-2">그리드 영역 재정의:</p>
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl grid zones --active 0,0,8,4 --resources 8,0,4,4</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item p-4 bg-gray-50 rounded-lg mb-2 cursor-pointer">
+                            <h4 class="font-bold">AI 도구 통합</h4>
+                            <div class="accordion-content hidden mt-2">
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl ai update-configs</span>
+                                    <span class="terminal-line terminal-output">🤖 AI 설정 파일 업데이트 중...</span>
+                                    <span class="terminal-line terminal-success">✅ 다음 도구의 설정이 업데이트됨: cursor, copilot, windsurf</span>
+                                </div>
+                                
+                                <p class="mt-4 mb-2">특정 도구 설정:</p>
+                                <div class="terminal">
+                                    <span class="terminal-line terminal-prompt">gridwrinkl ai config --tool cursor --project-style "팀 표준"</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const layoutData = JSON.parse('{{ layout_json | safe }}');
+
+        // 그리드 초기화
+        function initializeGrid() {
+            const gridBoard = document.getElementById('grid-board');
+            gridBoard.innerHTML = '';
+            
+            const gridWidth = layoutData.grid_size.width;
+            const gridHeight = layoutData.grid_size.height;
+
+            gridBoard.style.gridTemplateColumns = `repeat(${gridWidth}, 1fr)`;
+            gridBoard.style.gridTemplateRows = `repeat(${gridHeight}, 1fr)`;
+
+            // 그리드 셀 생성
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    gridBoard.appendChild(cell);
+                }
+            }
+            
+            // 실제 데이터로 블록 렌더링
+            renderBlocks(layoutData.blocks);
+        }
+
+        // 실제 데이터로 블록 렌더링
+        function renderBlocks(blocks) {
+            const gridBoard = document.getElementById('grid-board');
+            
+            blocks.forEach(block => {
+                if (!block.placed || !block.position) return;
+
+                const blockElem = document.createElement('div');
+                blockElem.className = `file-block block-${block.category}`;
+                blockElem.textContent = block.name.length > 10 ? block.name.substring(0, 10) + '..' : block.name;
+                
+                // CSS Grid를 사용하여 블록 위치 지정
+                blockElem.style.gridColumnStart = block.position.x + 1;
+                blockElem.style.gridRowStart = block.position.y + 1;
+                
+                blockElem.draggable = true;
+                gridBoard.appendChild(blockElem);
+            });
+        }
+
+        // 탭 전환
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            document.getElementById(tabId).style.display = 'block';
+        }
+
+        // 아코디언 기능
+        function setupAccordion() {
+            document.querySelectorAll('.accordion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const content = this.querySelector('.accordion-content');
+                    content.classList.toggle('hidden');
+                });
+            });
+        }
+
+        // 새 기능 생성 (데모용)
+        function createFeature() {
+            const featureName = document.getElementById('feature-name').value;
+            if (!featureName) {
+                alert('기능 이름을 입력하세요');
+                return;
+            }
+            
+            // 실제로는 서버와 통신하겠지만, 여기서는 알림만 표시
+            alert(`새 기능 '${featureName}'이 생성되었습니다.\n위치: .ai/ledgers/active/${featureName}.md`);
+            document.getElementById('feature-name').value = '';
+        }
+
+        // 파일 추가 (데모용)
+        function addFile() {
+            const fileType = document.getElementById('file-type').value;
+            let fileName;
+            
+            switch(fileType) {
+                case 'code':
+                    fileName = 'new_component.js';
+                    break;
+                case 'document':
+                    fileName = 'documentation.md';
+                    break;
+                case 'config':
+                    fileName = 'settings.json';
+                    break;
+                default:
+                    fileName = 'newfile.txt';
+            }
+            
+            alert(`'${fileName}' 파일이 추가되었습니다. GridFile에 블록이 생성되었습니다.`);
+        }
+
+        // 시스템 동기화 (데모용)
+        function syncSystem() {
+            alert('맥락 동기화가 완료되었습니다. 모든 AI 도구가 최신 맥락을 반영합니다.');
+        }
+
+        // 레이아웃 내보내기 (데모용)
+        function exportLayout() {
+            alert('그리드 레이아웃이 .gridfile/layouts/current.json로 내보내기 되었습니다.');
+        }
+
+        // 진행 차트 초기화
+        function initProgressChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['활성', '대기', '완료', '아카이브'],
+                    datasets: [{
+                        label: '파일 수',
+                        data: [5, 3, 8, 12],
+                        backgroundColor: [
+                            '#ff6b6b',
+                            '#ffa726',
+                            '#4caf50',
+                            '#ffe082'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 가이드 투어 설정
+        function setupGuidedTour() {
+            const tourBtn = document.getElementById('guided-tour');
+            const tourModal = document.getElementById('tour-modal');
+            const tourSteps = document.querySelectorAll('.tour-step');
+            const prevBtn = document.getElementById('tour-prev');
+            const nextBtn = document.getElementById('tour-next');
+            const closeBtn = document.getElementById('tour-close');
+            let currentStep = 1;
+            
+            tourBtn.addEventListener('click', () => {
+                tourModal.style.display = 'flex';
+                updateTourNavigation();
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < tourSteps.length) {
+                    tourSteps[currentStep-1].classList.remove('active');
+                    currentStep++;
+                    tourSteps[currentStep-1].classList.add('active');
+                    updateTourNavigation();
+                }
+            });
+            
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 1) {
+                    tourSteps[currentStep-1].classList.remove('active');
+                    currentStep--;
+                    tourSteps[currentStep-1].classList.add('active');
+                    updateTourNavigation();
+                }
+            });
+            
+            closeBtn.addEventListener('click', () => {
+                tourModal.style.display = 'none';
+                resetTour();
+            });
+            
+            // 모달 외부 클릭 시 닫기
+            tourModal.addEventListener('click', (e) => {
+                if (e.target === tourModal) {
+                    tourModal.style.display = 'none';
+                    resetTour();
+                }
+            });
+            
+            function updateTourNavigation() {
+                prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+                closeBtn.style.display = currentStep === tourSteps.length ? 'block' : 'none';
+                nextBtn.style.display = currentStep < tourSteps.length ? 'block' : 'none';
+            }
+            
+            function resetTour() {
+                tourSteps.forEach((step, index) => {
+                    if (index === 0) {
+                        step.classList.add('active');
+                    } else {
+                        step.classList.remove('active');
+                    }
+                });
+                currentStep = 1;
+                updateTourNavigation();
+            }
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGrid();
+            showTab('demo');
+            setupAccordion();
+            initProgressChart();
+            setupGuidedTour();
+            
+            // 존 표시기 스타일 조정
+            document.querySelector('.active-zone').style.background = 'rgba(255, 0, 0, 0.05)';
+            document.querySelector('.resources-zone').style.background = 'rgba(0, 0, 255, 0.05)';
+            document.querySelector('.archive-zone').style.background = 'rgba(0, 128, 0, 0.05)';
+        });
+    </script>
+</body>
+</html>
